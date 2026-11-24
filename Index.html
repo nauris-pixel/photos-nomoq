@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<!--
+  NOMOQ · Add photos – forwarding page for the QR code on the End of Shift Report.
+
+  Why it exists: Android sends every scanned script.google.com link to the Google Drive app,
+  which can't open it ("file does not exist"). This page lives on a normal website, so the phone
+  opens it in the browser; it then forwards – still inside the browser – to the NOMOQ sign-in
+  and the photo page.
+
+  It stores nothing, loads nothing from other sites and only forwards to the NOMOQ End of Shift
+  photo page. The photo link travels after "#", which browsers never send to this website.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>NOMOQ · Add photos</title>
+  <style>
+    :root{--bg:#F3F4F6;--card:#fff;--ink:#0F172A;--muted:#64748B;--line:#E2E8F0;--accent:#2563EB}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+    .wrap{max-width:480px;margin:0 auto;padding:40px 16px}
+    .brand{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
+    h1{margin:4px 0 18px;font-size:24px;letter-spacing:-.02em}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:24px 20px;text-align:center;box-shadow:0 4px 24px rgba(15,23,42,.05)}
+    .spin{width:34px;height:34px;margin:4px auto 14px;border:3px solid #DBEAFE;border-top-color:var(--accent);border-radius:50%;animation:s .8s linear infinite}
+    @keyframes s{to{transform:rotate(360deg)}}
+    p{margin:0 0 6px;color:var(--muted);line-height:1.45;font-size:15px}
+    p b{color:var(--ink)}
+    .btn{display:block;width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:var(--accent);color:#fff;font:600 16px/1.2 inherit;text-decoration:none;cursor:pointer}
+    .btn.light{background:#EFF6FF;color:var(--accent)}
+    [hidden]{display:none!important}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">NOMOQ · Print</div>
+  <h1>Add photos</h1>
+  <div class="card">
+    <div id="go">
+      <div class="spin"></div>
+      <p><b>Opening the NOMOQ sign-in…</b></p>
+      <p>Sign in with your <b>@nomoq.com</b> account, then choose your photos.</p>
+      <div id="help" hidden>
+        <p style="margin-top:14px">Nothing happening?</p>
+        <a class="btn" id="open" href="#">Open the photo page</a>
+        <a class="btn light" id="chrome" href="#" hidden>Open in Chrome</a>
+        <button class="btn light" id="copy" type="button">Copy link</button>
+      </div>
+    </div>
+    <div id="bad" hidden>
+      <p><b>This code doesn't work.</b></p>
+      <p>On the press PC, open <b>Scan with phone</b> and scan the new code.</p>
+    </div>
+  </div>
+</div>
+<script>
+  (function () {
+    // Only the End of Shift photo page is allowed as a target, so this page can't be
+    // misused to send people anywhere else.
+    var OK = /^https:\/\/script\.google\.com\/(a\/macros\/nomoq\.com\/|macros\/)s\/[\w-]{20,}\/exec\?p=[0-9a-f]{32}$/;
+    var target = '';
+    try { target = decodeURIComponent(location.hash.slice(1)); } catch (e) {}
+    if (!OK.test(target)) {
+      document.getElementById('go').hidden = true;
+      document.getElementById('bad').hidden = false;
+      return;
+    }
+    // Keep the photo link out of the browser history of this page.
+    try { history.replaceState(null, '', location.pathname); } catch (e) {}
+
+    document.getElementById('open').href = target;
+    if (/Android/i.test(navigator.userAgent)) {
+      var chrome = document.getElementById('chrome');
+      chrome.href = 'intent://' + target.replace(/^https:\/\//, '') +
+                    '#Intent;scheme=https;package=com.android.chrome;end';
+      chrome.hidden = false;
+    }
+    document.getElementById('copy').onclick = function () {
+      var b = this;
+      (navigator.clipboard ? navigator.clipboard.writeText(target) : Promise.reject())
+        .then(function () { b.textContent = 'Copied – paste it into Chrome'; })
+        .catch(function () { prompt('Copy this link and paste it into Chrome:', target); });
+    };
+
+    // Forward after a short pause. A forward that isn't a tap stays in this browser tab,
+    // so Android doesn't hand it to the Drive app.
+    setTimeout(function () { location.replace(target); }, 400);
+    setTimeout(function () { document.getElementById('help').hidden = false; }, 4000);
+  })();
+</script>
+</body>
+</html>
